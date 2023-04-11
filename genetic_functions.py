@@ -42,7 +42,7 @@ def score_pop_fitness(pop: list):
 
     return pop_scores
 
-
+# Returns a score for a genome
 def score_genome_fitness(genome):
     score = 0
     for row_idx in range(len(weighted_from_to.index)):
@@ -59,6 +59,15 @@ def score_genome_fitness(genome):
                     a = weighted_from_to
     return score
 
+#
+def keep_top_n(n, scored_pop):
+    # sort the list of dictionaries by ascending score
+    sorted_scored_pop = sorted(scored_pop, key=lambda x: x['score'])
+    # return the first n dictionaries from the sorted list
+    return sorted_scored_pop[:n]
+
+
+# Get the rectilinear distance between one operation and another (also works for from starting and to ending)
 def _get_mean_distance(genome, op_from: int, op_to: int):
     # From Start (raw material) to an operation
     if op_from == 0:
@@ -105,6 +114,7 @@ def _get_mean_distance(genome, op_from: int, op_to: int):
 
 my_pop = generate_initial_population(5)
 scored_pop = score_pop_fitness(my_pop)
+asdf = keep_top_n(2, scored_pop)
 a = 1
 #a_genome = generate_random_sample()
 #yeet = _get_mean_distance(a_genome, 1, 2)
