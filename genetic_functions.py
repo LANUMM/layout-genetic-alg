@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import random
 
 from helper_functions import get_weighted_from_to
 
@@ -66,6 +67,57 @@ def keep_top_n(n, scored_pop):
     # return the first n dictionaries from the sorted list
     return sorted_scored_pop[:n]
 
+def choose_parents(scored_pop):
+    # calculate the inverse of each score (to prioritize lower scores)
+    inverse_scores = [1 / x['score'] for x in scored_pop]
+    # calculate the sum of the inverse scores
+    sum_inverse_scores = sum(inverse_scores)
+    # normalize the inverse scores
+    norm_inverse_scores = [x / sum_inverse_scores for x in inverse_scores]
+    # use the normalized inverse scores as probabilities for random choice
+    indices = random.choices(range(len(scored_pop)), weights=norm_inverse_scores, k=2)
+    # return the two dictionaries at the chosen indices
+    return [scored_pop[i] for i in indices]
+
+
+import pandas as pd
+import numpy as np
+
+
+def crossover(parents):
+    parent1 = parents[0]["genome"]
+    parent2 = parents[1]["genome"]
+
+    child = pd.DataFrame(np.zeros((5, 5)))
+
+    options = [1, 2, 3, 4, 5]
+    counts = [5, 5, 5, 5, 5]
+
+    positions = [(i, j) for i in range(5) for j in range(5)]
+    np.random.shuffle(positions)
+    for i, j in positions:
+        if child.loc[i, j] == 0:
+            if np.random.random() < 0.5:
+                value = parent1.loc[i, j]
+            else:
+                value = parent2.loc[i, j]
+
+            if counts[value - 1] > 0:
+                child.loc[i, j] = value
+                counts[value - 1] -= 1
+            else:
+                if value in options:
+                    options.remove(value)
+
+                random_value = np.random.choice(options)
+                child.loc[i, j] = random_value
+                counts[random_value - 1] -= 1
+
+    #child = child.astype(int)
+    #child = child.rename_axis(index=range(5), columns=range(5))
+
+    return child
+
 
 # Get the rectilinear distance between one operation and another (also works for from starting and to ending)
 def _get_mean_distance(genome, op_from: int, op_to: int):
@@ -112,9 +164,23 @@ def _get_mean_distance(genome, op_from: int, op_to: int):
 
     return dist
 
+def check_valid(df):
+    count_1 = (df == 1).sum().sum()
+    count_2 = (df == 2).sum().sum()
+    count_3 = (df == 3).sum().sum()
+    count_4 = (df == 4).sum().sum()
+    count_5 = (df == 5).sum().sum()
+
+    if count_1 == 5 and count_2 == 5 and count_3 == 5 and count_4 == 5 and count_5 == 5:
+        return True
+    else:
+        return False
+
+
 my_pop = generate_initial_population(5)
 scored_pop = score_pop_fitness(my_pop)
-asdf = keep_top_n(2, scored_pop)
+parents = choose_parents(scored_pop)
+kiddo = crossover(parents)
 a = 1
 #a_genome = generate_random_sample()
 #yeet = _get_mean_distance(a_genome, 1, 2)
