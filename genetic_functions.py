@@ -57,7 +57,6 @@ def score_genome_fitness(genome):
                     weight = weighted_from_to.iloc[row_idx, col_idx]
                     distance = _get_mean_distance(genome, op_from=from_op, op_to=to_op)
                     score += weight * distance
-                    a = weighted_from_to
     return score
 
 #
@@ -79,11 +78,7 @@ def choose_parents(scored_pop):
     # return the two dictionaries at the chosen indices
     return [scored_pop[i] for i in indices]
 
-
-import pandas as pd
-import numpy as np
-
-
+# TODO: track down bug where its not returning valid genome
 def crossover(parents):
     parent1 = parents[0]["genome"]
     parent2 = parents[1]["genome"]
@@ -99,8 +94,10 @@ def crossover(parents):
         if child.loc[i, j] == 0:
             if np.random.random() < 0.5:
                 value = parent1.loc[i, j]
+                other_parent = parent2
             else:
                 value = parent2.loc[i, j]
+                other_parent = parent1
 
             if counts[value - 1] > 0:
                 child.loc[i, j] = value
@@ -109,14 +106,24 @@ def crossover(parents):
                 if value in options:
                     options.remove(value)
 
-                random_value = np.random.choice(options)
-                child.loc[i, j] = random_value
-                counts[random_value - 1] -= 1
+                # Try the other parent
+                other_value = other_parent.loc[i, j]
+                if counts[other_value - 1] > 0:
+                    child.loc[i, j] = other_value
+                    counts[other_value - 1] -= 1
+                else:
+                    if other_value in options:
+                        options.remove(other_value)
 
-    #child = child.astype(int)
-    #child = child.rename_axis(index=range(5), columns=range(5))
+                    # If neither parent works, choose randomly
+                    random_value = np.random.choice(options)
+                    child.loc[i, j] = random_value
+                    counts[random_value - 1] -= 1
 
-    return child
+    if check_valid(child):
+        return child
+    else:
+        return crossover(parents)
 
 
 # Get the rectilinear distance between one operation and another (also works for from starting and to ending)
@@ -170,7 +177,6 @@ def check_valid(df):
     count_3 = (df == 3).sum().sum()
     count_4 = (df == 4).sum().sum()
     count_5 = (df == 5).sum().sum()
-
     if count_1 == 5 and count_2 == 5 and count_3 == 5 and count_4 == 5 and count_5 == 5:
         return True
     else:
@@ -181,6 +187,7 @@ my_pop = generate_initial_population(5)
 scored_pop = score_pop_fitness(my_pop)
 parents = choose_parents(scored_pop)
 kiddo = crossover(parents)
+print(check_valid(kiddo))
 a = 1
 #a_genome = generate_random_sample()
 #yeet = _get_mean_distance(a_genome, 1, 2)
