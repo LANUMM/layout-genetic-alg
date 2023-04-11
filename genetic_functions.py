@@ -18,22 +18,14 @@ def generate_initial_population(pop_size: int):
 
 # Test: 5x5 array, 5 1s, 5 2s, 5 3s, 5 4s, 5 5s
 def generate_random_sample():
-    # Create an empty 5x5 array
-    genome = pd.DataFrame(columns=['y1', 'y2', 'y3', 'y4', 'y5'], index=['x1', 'x2', 'x3', 'x4', 'x5'])
-    genome = genome.fillna(0)
-
     machine_types = [1, 2, 3, 4, 5]
-
-    # Create list of all possible machine coordinates
-    machine_coordinates = [(i, j) for i in range(5) for j in range(5)]
 
     # Create list of 5 of each machine type in random order
     machines = np.repeat(machine_types, repeats=5)
     np.random.shuffle(machines)
 
-    # Fill 5x5 array with machines
-    for i, coordinate in enumerate(machine_coordinates):
-        genome.iloc[coordinate[0], coordinate[1]] = machines[i]
+    # Reshape random list of machines into a 5x5 df 
+    genome = pd.DataFrame(np.array(machines).reshape(5, 5))
 
     return genome
 
@@ -59,7 +51,7 @@ def score_genome_fitness(genome):
                 if col_idx < 6:
                     from_op = row_idx
                     to_op = col_idx
-                    myVal = weighted_from_to.iloc[row_idx,col_idx]
+                    myVal = weighted_from_to.iloc[row_idx, col_idx]
                     a=1
     print(weighted_from_to)
     print(genome)
