@@ -63,8 +63,9 @@ def score_genome_fitness(genome):
 def keep_top_n(n, scored_pop):
     # sort the list of dictionaries by ascending score
     sorted_scored_pop = sorted(scored_pop, key=lambda x: x['score'])
-    # return the first n dictionaries from the sorted list
-    return sorted_scored_pop[:n]
+    # extract the 'genome' part of the dictionary for the first n elements from the sorted list
+    top_n_genomes = [d['genome'] for d in sorted_scored_pop[:n]]
+    return top_n_genomes
 
 def choose_parents(scored_pop):
     # calculate the inverse of each score (to prioritize lower scores)
@@ -78,7 +79,7 @@ def choose_parents(scored_pop):
     # return the two dictionaries at the chosen indices
     return [scored_pop[i] for i in indices]
 
-# TODO: track down bug where its not returning valid genome
+
 def crossover(parents):
     parent1 = parents[0]["genome"]
     parent2 = parents[1]["genome"]
@@ -119,12 +120,25 @@ def crossover(parents):
                     random_value = np.random.choice(options)
                     child.loc[i, j] = random_value
                     counts[random_value - 1] -= 1
-
+    child = child.astype(int)
     if check_valid(child):
         return child
     else:
         return crossover(parents)
 
+# Mutation function that swaps n number of machines in the layout randomly.
+def mutation(genome, n):
+    for i in range(n):
+        # Select two random positions in the genome
+        pos1 = (random.randint(0, 4), random.randint(0, 4))
+        pos2 = (random.randint(0, 4), random.randint(0, 4))
+
+        # Swap the values at the selected positions
+        temp = genome.loc[pos1]
+        genome.loc[pos1] = genome.loc[pos2]
+        genome.loc[pos2] = temp
+
+    return genome
 
 # Get the rectilinear distance between one operation and another (also works for from starting and to ending)
 def _get_mean_distance(genome, op_from: int, op_to: int):
@@ -171,6 +185,7 @@ def _get_mean_distance(genome, op_from: int, op_to: int):
 
     return dist
 
+
 def check_valid(df):
     count_1 = (df == 1).sum().sum()
     count_2 = (df == 2).sum().sum()
@@ -183,11 +198,6 @@ def check_valid(df):
         return False
 
 
-my_pop = generate_initial_population(5)
-scored_pop = score_pop_fitness(my_pop)
-parents = choose_parents(scored_pop)
-kiddo = crossover(parents)
-print(check_valid(kiddo))
-a = 1
-#a_genome = generate_random_sample()
-#yeet = _get_mean_distance(a_genome, 1, 2)
+def log_population_info(scored_pop, generation):
+    highest_score = sorted(scored_pop, key=lambda x: x['score'])[0]['score']
+    print("Generation {}  |  Highest Score: {:<5}".format(generation, highest_score))

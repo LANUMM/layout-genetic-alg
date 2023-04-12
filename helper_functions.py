@@ -37,3 +37,10 @@ def get_weighted_from_to():
                 weighted_from_to.iloc[operations[i], 6] += prob
 
     return weighted_from_to
+
+def get_origional_layout():
+    lst = pd.read_csv('origional_layout.csv')
+    ordered_cords = [(lst[i], lst[i+1]) for i in range(0, len(lst), 2)]
+
+def genome_to_areana(genome):
+    return 1
