@@ -1,5 +1,5 @@
 import pandas as pd
-
+import numpy as np
 
 # Generate weighted scoring from-to-chart
 def get_weighted_from_to():
@@ -38,9 +38,29 @@ def get_weighted_from_to():
 
     return weighted_from_to
 
-def get_origional_layout():
-    lst = pd.read_csv('origional_layout.csv')
+def get_original_layout():
+    df = pd.read_csv('original_map.csv', header=None)
+    lst = df[0].values.tolist()
     ordered_cords = [(lst[i], lst[i+1]) for i in range(0, len(lst), 2)]
+    ordered_cords_shift = [(lst[i]-1, lst[i+1]-1) for i in range(0, len(lst), 2)][:25]
+    coords = ordered_cords_shift
+    genome = pd.DataFrame(data=0, index=range(5), columns=range(5))
+    for i in range(1, 6):
+        indices = [coord for coord in coords if genome.loc[coord[0], coord[1]] == 0][:5]
+        if len(indices) < 5:
+            raise ValueError(f"Not enough coordinates for value {i}")
+        for coord in indices:
+            genome.loc[coord[0], coord[1]] = i
+    return genome
+
 
 def genome_to_areana(genome):
-    return 1
+    lst = []
+    for i in range(1, 6):
+        coords = [(r+1, c+1) for r, c in zip(*np.where(genome.values == i))]
+        lst.extend(coords)
+    expanded_lst = [item for tpl in lst for item in tpl]
+    expanded_lst.extend([0, 3, 6, 3])
+
+    return expanded_lst
+
