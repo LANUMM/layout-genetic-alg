@@ -1,12 +1,12 @@
 from genetic_functions import *
 from helper_functions import get_original_layout
-from helper_functions import genome_to_areana
+from helper_functions import genome_to_arena
 
 # HYPER PARAMS
 population_size = 10
 top_n_to_keep = 2
 mutations_per_genome = 1
-iterations = 400
+iterations = 1
 
 # GET ORIGINAL LAYOUT SCORE
 print("ORIGINAL LAYOUT SCORE: {:<5}".format(score_genome_fitness(get_original_layout())))
@@ -28,7 +28,7 @@ for i in range(iterations):
 scored_pop = score_pop_fitness(pop)
 final_layout = sorted(scored_pop, key=lambda x: x['score'])[0]['genome']
 print(final_layout)
-arena_list = genome_to_areana(final_layout)
+arena_list = genome_to_arena(final_layout)
 print('########################')
 print('ARENA READY ORDER')
 for i in arena_list:

@@ -54,7 +54,7 @@ def get_original_layout():
     return genome
 
 
-def genome_to_areana(genome):
+def genome_to_arena(genome):
     lst = []
     for i in range(1, 6):
         coords = [(r+1, c+1) for r, c in zip(*np.where(genome.values == i))]
@@ -64,3 +64,15 @@ def genome_to_areana(genome):
 
     return expanded_lst
 
+
+def get_operations():
+    # Read csv of order of operations each kind of job needs to go through
+    operations_order = pd.read_csv('operation_order.csv')
+    operations_order = operations_order.set_index('Job_Type')
+    return operations_order
+
+
+def get_ptime():
+    # Read csv of processing time for each operation for each type of job
+    ptime = pd.read_csv('ptime.csv', index_col=0)
+    return ptime

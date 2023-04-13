@@ -200,4 +200,4 @@ def check_valid(df):
 
 def log_population_info(scored_pop, generation):
     highest_score = sorted(scored_pop, key=lambda x: x['score'])[0]['score']
-    print("Generation {}  |  Highest Score: {:<5}".format(generation, highest_score))
+    print("Generation {}  |  Lowest Score: {:<5}".format(generation, highest_score))
