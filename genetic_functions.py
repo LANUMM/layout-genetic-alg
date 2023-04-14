@@ -2,7 +2,9 @@ import numpy as np
 import pandas as pd
 import random
 
+import simulation
 from helper_functions import get_weighted_from_to
+from simulation import evaluate_genome
 
 # GLOBAL VARIABLES
 weighted_from_to = get_weighted_from_to()
@@ -44,7 +46,7 @@ def score_pop_fitness(pop: list):
     return pop_scores
 
 # Returns a score for a genome
-def score_genome_fitness(genome):
+def score_genome_fitness_OLD(genome):
     score = 0
     for row_idx in range(len(weighted_from_to.index)):
         for col_idx in range(len(weighted_from_to.columns)):
@@ -59,6 +61,9 @@ def score_genome_fitness(genome):
                     score += weight * distance
     return score
 
+def score_genome_fitness_sim(genome):
+    sim_score = simulation.evaluate_genome(genome)
+    return genome
 #
 def keep_top_n(n, scored_pop):
     # sort the list of dictionaries by ascending score

@@ -2,6 +2,7 @@ from genetic_functions import *
 from helper_functions import get_original_layout
 from helper_functions import genome_to_arena
 
+
 # HYPER PARAMS
 population_size = 10
 top_n_to_keep = 2
