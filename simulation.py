@@ -32,6 +32,7 @@ class Job:
         self.operation_position = 0
         self.location = starting_location
         self.arrival_time = arrival_time
+        self.delays = []
 
     def __lt__(self, other):
         return self.arrival_time < other.arrival_time
@@ -116,7 +117,7 @@ class FactoryModel:
 
     def process_job(self, job):
         # Record the arrival time of the job
-        arrival_time = self.env.now
+        #arrival_time = self.env.now
 
         # If job is new get raw material
         if job.operation_position == 0:
@@ -133,11 +134,16 @@ class FactoryModel:
             part_arrival_time = self.env.now
             heapq.heappush(machine.queue, (part_arrival_time, job))
 
+            start_que_wait = self.env.now
             # Process the part on the machine
             with machine.request() as req:
                 yield req
+                que_wait = self.env.now - start_que_wait
+                job.delays.append({"name": "queue", "duration": que_wait})
                 heapq.heappop(machine.queue)  # Remove the job from the queue when it starts processing
-                yield self.env.timeout(g.p_time.iloc[job.operation_position, job.job_type-1])
+                m_processing_time = g.p_time.iloc[job.operation_position, job.job_type-1]
+                job.delays.append({"name": "machining", "duration": m_processing_time})
+                yield self.env.timeout(m_processing_time)
 
             # Update the job's operation_position
             job.operation_position += 1
@@ -156,7 +162,7 @@ class FactoryModel:
             self.stop_event.succeed()
 
         # Record the waiting time for the job
-        waiting_time = self.env.now - arrival_time
+        waiting_time = self.env.now - job.arrival_time
         self.waiting_times.append(waiting_time)
 
         # Record the number of parts in the system at this time
@@ -192,6 +198,7 @@ class FactoryModel:
             rectilinear_distance = 0  # Assume no travel time for the first operation
 
         travel_time = rectilinear_distance * edge  # Calculate travel time based on rectilinear distance
+        job.delays.append({"name": "transport", "duration": travel_time})
         yield self.env.timeout(travel_time)  # Wait for travel_time to elapse
 
     def create_machines_by_operation_dict(self):
@@ -217,7 +224,10 @@ def run_simulation(run_number):
     model.env.process(model.job_generator())
     model.env.run(until=model.stop_event)  # Set an appropriate simulation time
     avg_waiting_time, avg_parts_in_system = model.calculate_stats()
+    print("Avg Waiting Time: {:<5}".format(avg_waiting_time))
+    print("Avg Parts In System: {:<5}".format(avg_parts_in_system))
     objective_function = 2 * avg_waiting_time + avg_parts_in_system
+    print("TOTAL SCORE: {:<5}".format(objective_function))
     return objective_function
 
 #def run_simulation_x_times():
@@ -227,10 +237,11 @@ def run_simulation(run_number):
 
 def evaluate_genome(genome):
     g.map = genome
-    results = [run_simulation(i + 1) for i in range(5)]
+    results = [run_simulation(i + 1) for i in range(10)]
 
     # Calculate the average objective function score
     average_objective_function_score = sum(results) / len(results)
 
     return average_objective_function_score
 
+print(evaluate_genome(helper_functions.get_original_layout()))

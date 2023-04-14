@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import random
+import multiprocessing
 
 import simulation
 from helper_functions import get_weighted_from_to
@@ -32,18 +33,28 @@ def generate_random_sample():
 
     return genome
 
-
 def score_pop_fitness(pop: list):
     # List of all scored_pops
     pop_scores = []
     for genome in pop:
         scored_genome = {
             "genome": genome,
-            "score": score_genome_fitness(genome)
+            "score": score_genome_fitness_sim(genome)
         }
         pop_scores.append(scored_genome)
 
     return pop_scores
+
+def score_genome_fitness_sim(genome):
+    sim_score = simulation.evaluate_genome(genome)
+    return sim_score
+
+def score_genome(genome):
+    return {
+        "genome": genome,
+        "score": score_genome_fitness_sim(genome)
+    }
+
 
 # Returns a score for a genome
 def score_genome_fitness_OLD(genome):
@@ -61,9 +72,6 @@ def score_genome_fitness_OLD(genome):
                     score += weight * distance
     return score
 
-def score_genome_fitness_sim(genome):
-    sim_score = simulation.evaluate_genome(genome)
-    return genome
 #
 def keep_top_n(n, scored_pop):
     # sort the list of dictionaries by ascending score
