@@ -19,8 +19,8 @@ class g:
     p_time = helper_functions.get_ptime().reset_index(drop=True) # dataframe of the processing time of each operation for each type of job
     edge = 2 # the distance between each layout coordinate
     setup_time = 10 # If a machine needs to be set up, it takes this time
-    reorder_point = 100 # If the number of raws drops below this value, it puts in an order of quantity reorder_quantity and it takes leadtime time
-    reorder_quantity = 200 #
+    reorder_point = 128 # If the number of raws drops below this value, it puts in an order of quantity reorder_quantity and it takes leadtime time
+    reorder_quantity = 128 #
     raws = 200 # the initial quantity of raw materials available.
     leadtime = 500 # the time it takes from placing an order for raw materials to geting the raw materials
     map = helper_functions.get_original_layout() # a 5x5 dataframe holding the layout (with 5 1s, 5 2s and so on for each machine type (operation type)
@@ -35,6 +35,7 @@ class Job:
         self.location = starting_location
         self.arrival_time = arrival_time
         self.delays = []
+        self.travel_time = 0
 
     def __lt__(self, other):
         return self.arrival_time < other.arrival_time
@@ -88,7 +89,7 @@ def container_monitor(env, container, rng):
 
 
 class FactoryModel:
-    def __init__(self, run_number):
+    def __init__(self, run_number, layout_map):
         # Set random seed based on run number
         self.rng = random.Random(run_number)
 
@@ -96,6 +97,7 @@ class FactoryModel:
         self.waiting_times = []
         self.parts_in_system = []
         self.parts_processed = 0
+        self.total_travel_time = 0
 
         self.env = simpy.Environment()
         self.order_counter = 0
@@ -103,7 +105,7 @@ class FactoryModel:
         self.stop_event = self.env.event()
 
         # Create machines
-        self.machines = create_machines_from_map(self.env, g.map)
+        self.machines = create_machines_from_map(self.env, layout_map)
 
         # Create raw parts storage
         self.raw_parts_storage = CustomContainer(self.env, capacity=float('inf'), init=g.raws)
@@ -121,6 +123,12 @@ class FactoryModel:
         # If job is new get raw material
         if job.operation_position == 0:
             yield self.raw_parts_storage.get(1)
+            # Find available machine for the current operation - find machine with shortest queue
+            machine = self.find_shortest_queue_machine(job.operation_sequence[0])
+
+            # Travel to machine
+            yield self.env.process(self.transport(job, machine, g.edge))
+
 
         # Capture average jobs in system
         # Record the number of parts in the system at this time
@@ -181,15 +189,20 @@ class FactoryModel:
         parts_in_system = sum(
             [len(m.queue) for m in self.machines]) + self.raw_parts_storage.level
         self.parts_in_system.append(parts_in_system)
+
+        # Record total travel time
+        self.total_travel_time += job.travel_time
+
     def calculate_stats(self):
         average_waiting_time = sum(self.waiting_times) / len(self.waiting_times)
         average_parts_in_system = sum(self.parts_in_system) / len(self.parts_in_system)
         return average_waiting_time, average_parts_in_system
+        # return self.total_travel_time
 
     def job_generator(self):
         while True:
             job_type = self.rng.choices(g.types, weights=g.type_prob, k=1)[0]
-            operation_sequence = g.operations.loc[job_type-1].tolist() # TODO: validate this works
+            operation_sequence = g.operations.loc[job_type-1].tolist()  # TODO: validate this works
             operation_sequence = [x for x in operation_sequence if x != 0]  # Trim operation sequence to get rid of 0s
             job = Job(job_type, operation_sequence=operation_sequence, starting_location=self.raw_parts_location
                       , arrival_time=self.env.now)
@@ -210,6 +223,7 @@ class FactoryModel:
 
         travel_time = rectilinear_distance * edge  # Calculate travel time based on rectilinear distance
         job.delays.append({"name": "transport", "duration": travel_time})
+        job.travel_time += travel_time
         yield self.env.timeout(travel_time)  # Wait for travel_time to elapse
 
     def get_machines_for_operation(self, operation):
@@ -225,11 +239,13 @@ class FactoryModel:
 
         return shortest_queue
 
-def run_simulation(run_number):
-    model = FactoryModel(run_number)
+
+def run_simulation(run_number, genome):
+    model = FactoryModel(run_number, genome)
     model.env.process(model.job_generator())
     model.env.run(until=model.stop_event)  # Set an appropriate simulation time
     avg_waiting_time, avg_parts_in_system = model.calculate_stats()
+    #total_travel_time = model.calculate_stats()
     #print("Avg Waiting Time: {:<5}".format(avg_waiting_time))
     #print("Avg Parts In System: {:<5}".format(avg_parts_in_system))
     objective_function = 2 * avg_waiting_time + avg_parts_in_system
@@ -237,16 +253,18 @@ def run_simulation(run_number):
     return objective_function
 
 
+def run_simulation_wrapper(args):
+    run_number, genome = args
+    return run_simulation(run_number + 1, genome)
 
-def run_simulation_wrapper(run_number):
-    return run_simulation(run_number + 1)
 
 def evaluate_genome(genome):
-    g.map = genome
+    # Create a list of tuples (run_number, genome) to be used as arguments
+    args_list = [(i, genome) for i in range(10)]
 
     # Use a multiprocessing pool to run simulations in parallel
     with Pool() as pool:
-        results = pool.map(run_simulation_wrapper, range(10))
+        results = pool.map(run_simulation_wrapper, args_list)
 
     # Calculate the average objective function score
     average_objective_function_score = sum(results) / len(results)

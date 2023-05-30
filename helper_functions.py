@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 
+
 # Generate weighted scoring from-to-chart
 def get_weighted_from_to():
     # Read csv of order of operations each kind of job needs to go through
@@ -39,7 +40,7 @@ def get_weighted_from_to():
     return weighted_from_to
 
 def get_original_layout():
-    df = pd.read_csv('original_map.csv', header=None)
+    df = pd.read_csv('final_map.csv', header=None)
     lst = df[0].values.tolist()
     ordered_cords = [(lst[i], lst[i+1]) for i in range(0, len(lst), 2)]
     ordered_cords_shift = [(lst[i]-1, lst[i+1]-1) for i in range(0, len(lst), 2)][:25]
@@ -76,3 +77,5 @@ def get_ptime():
     # Read csv of processing time for each operation for each type of job
     ptime = pd.read_csv('ptime.csv', index_col=0)
     return ptime
+
+get_original_layout()

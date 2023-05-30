@@ -7,11 +7,11 @@ def run_genetic_algorithm():
     # HYPER PARAMS
     population_size = 10
     top_n_to_keep = 2
-    mutations_per_genome = 2
-    iterations = 5
+    mutations_per_genome = 3
+    iterations = 2000
 
     # GET ORIGINAL LAYOUT SCORE
-    print("ORIGINAL LAYOUT SCORE: {:<5}".format(simulation.evaluate_genome(get_original_layout())))
+    print("ORIGINAL LAYOUT SCORE: {:<5}".format(evaluate_genome(get_original_layout())))
     # ALGORITHM
     initial_pop = generate_initial_population(population_size)
     pop = initial_pop
